@@ -1,0 +1,20 @@
+{
+  "name": "auth-platform",
+  "private": true,
+  "version": "0.1.0",
+  "description": "统一身份平台：Logto + 共享验签包",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "up": "docker compose up -d",
+    "down": "docker compose down",
+    "logs": "docker compose logs -f logto",
+    "check": "node scripts/check.mjs",
+    "provision": "node scripts/provision.mjs",
+    "build": "npm run build -w @auth/verify"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

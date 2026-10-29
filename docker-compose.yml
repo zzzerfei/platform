@@ -30,7 +30,8 @@ services:
       ENDPOINT: ${LOGTO_ENDPOINT}
       ADMIN_ENDPOINT: ${LOGTO_ADMIN_ENDPOINT}
     ports:
-      - "3001:3001"
+      # 宿主机 3001 已被 ai-platform-starter 占用，Logto 改映射到 13001
+      - "13001:3001"
       - "3002:3002"
 
 volumes:

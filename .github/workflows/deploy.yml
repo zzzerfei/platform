@@ -1,0 +1,56 @@
+name: Deploy
+
+# 推送到 main 自动部署；也可以在 Actions 页面手动 Run workflow
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docker-compose.yml"
+      - "scripts/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-auth-platform
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 只拉代码 + 按 compose 收敛容器状态，不执行 provision：
+      # provision 会创建 API Resource / Application，需要 M2M 凭据，保持人工执行。
+      - name: SSH deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 10m
+          script_stop: true
+          script: |
+            set -e
+            cd /opt/auth-platform
+            git fetch --prune origin
+            # .env 与 postgres 数据卷都不在 git 里，reset 不会动它们
+            git reset --hard origin/main
+            git log --oneline -1
+
+            docker compose up -d --remove-orphans
+
+            echo "等待 Logto OIDC 端点可用..."
+            for i in $(seq 1 40); do
+              if curl -fsS --max-time 5 https://auth.zerfei.top/oidc/.well-known/openid-configuration >/dev/null; then
+                echo "Logto 就绪"
+                break
+              fi
+              sleep 3
+            done
+            curl -fsS --max-time 10 https://auth.zerfei.top/oidc/.well-known/openid-configuration >/dev/null \
+              || { echo "Logto 未就绪"; docker compose logs --tail 60 logto; exit 1; }
+
+            echo "部署完成"
+            docker image prune -f >/dev/null 2>&1 || true

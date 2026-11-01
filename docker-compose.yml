@@ -17,7 +17,8 @@ services:
       retries: 20
 
   logto:
-    image: svhd/logto:latest
+    # 固定版本：1.45 起管理台域名路由异常（只认 localhost:3002），回退到 1.44
+    image: svhd/logto:1.44.0
     restart: unless-stopped
     depends_on:
       postgres:

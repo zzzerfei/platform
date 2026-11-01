@@ -33,7 +33,7 @@ jobs:
           script_stop: true
           script: |
             set -e
-            cd /opt/auth-platform
+            cd /opt/platform
             git fetch --prune origin
             # .env 与 postgres 数据卷都不在 git 里，reset 不会动它们
             git reset --hard origin/main
